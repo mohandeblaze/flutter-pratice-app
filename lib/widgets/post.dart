@@ -23,6 +23,46 @@ class _ImgurItemWidgetState extends State<ImgurItemWidget> {
   ChewieController _chewieController;
 
   @override
+  void dispose() {
+    if (!isNull(_videoPlayerController)) {
+      _videoPlayerController.dispose();
+    }
+    if (!isNull(_chewieController)) {
+      _chewieController.dispose();
+    }
+    super.dispose();
+  }
+
+  void init() {
+    var isValid = !isNull(widget.imgurPost.images);
+    var imageCollection = widget.imgurPost.images;
+
+    if (isValid && isImage(imageCollection[0].type.toString())) {
+      post = getImageWidget(widget.imgurPost, post);
+    } else if (isValid && isVideo(imageCollection[0].type.toString())) {
+      post = getVideoWidget(widget.imgurPost, post);
+    } else if (isValid && isImage(widget.imgurPost.type.toString())) {
+      post = getImageWidget(widget.imgurPost, post, widget.imgurPost.link);
+    } else if (isImage(widget.imgurPost.type.toString())) {
+      post = getImageWidget(widget.imgurPost, post, widget.imgurPost.link);
+    } else if (isVideo(widget.imgurPost.type.toString())) {
+      post = getVideoWidget(widget.imgurPost, post, widget.imgurPost.mp4,
+          widget.imgurPost.width, widget.imgurPost.height);
+    } else {
+      print("**********************************");
+      print("********Dummy widget added********");
+      print("**********************************");
+      // Dummy image widget
+      var imgDetails = ImageDetails("http://via.placeholder.com/350x150", 150.0,
+          350.0, widget.imgurPost.title);
+      post = ImageWidget(
+        imageDetails: imgDetails,
+        url: imgDetails.imageURL,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     init();
 
@@ -49,59 +89,43 @@ class _ImgurItemWidgetState extends State<ImgurItemWidget> {
     );
   }
 
-  @override
-  void dispose() {
-    if (!isNull(_videoPlayerController)) {
-      _videoPlayerController.dispose();
-    }
-    if (!isNull(_chewieController)) {
-      _chewieController.dispose();
-    }
-    super.dispose();
-  }
-
-  void init() {
-    var isValid = !isNull(widget.imgurPost.images);
-    var imageCollection = widget.imgurPost.images;
-
-    if (isValid && isImage(imageCollection[0].type.toString())) {
-      post = getImageWidget(widget.imgurPost, post);
-    } else if (isValid && isVideo(imageCollection[0].type.toString())) {
-      post = getVideoWidget(widget.imgurPost, post);
-    } else if (isValid && isImage(widget.imgurPost.link)) {
-      post = getImageWidget(widget.imgurPost, post, widget.imgurPost.link);
+  Widget getImageWidget(ImgurPost imgurPost, Widget post, [String url]) {
+    if (isNull(url)) {
+      ImageDetails imageDetails = getImageDetails(imgurPost);
+      url = imageDetails.imageURL;
+      return ImageWidget(
+        imageDetails: imageDetails,
+        url: url,
+      );
     } else {
-      // Dummy image widget
-      var imgDetails = ImageDetails("http://via.placeholder.com/350x150", 150.0,
-          350.0, widget.imgurPost.title);
-      post = ImageWidget(
-        imageDetails: imgDetails,
-        url: imgDetails.imageURL,
+      return ImageWidget(
+        url: url,
+        imageDetails: ImageDetails(
+          url,
+          !isNull(imgurPost.height)
+              ? imgurPost.height.toDouble()
+              : imgurPost.coverHeight.toDouble(),
+          !isNull(imgurPost.width)
+              ? imgurPost.width.toDouble()
+              : imgurPost.coverWidth.toDouble(),
+          imgurPost.description,
+        ),
       );
     }
   }
 
-  Widget getImageWidget(ImgurPost imgurPost, Widget post, [String url]) {
-    ImageDetails imageDetails = getImageDetails(imgurPost);
-    if (isNull(url)) {
-      url = imageDetails.imageURL;
-    }
-
-    return ImageWidget(
-      imageDetails: imageDetails,
-      url: url,
-    );
-  }
-
-  Widget getVideoWidget(ImgurPost imgurPost, Widget post) {
-    _videoPlayerController =
-        VideoPlayerController.network(imgurPost.images[0].mp4);
+  Widget getVideoWidget(ImgurPost imgurPost, Widget post,
+      [String url, int width, int height]) {
+    String link = isNull(url) ? imgurPost.images[0].mp4 : url;
+    int videoWidth = isNull(width) ? imgurPost.images[0].width : width;
+    int videoHeight = isNull(height) ? imgurPost.images[0].height : height;
+    _videoPlayerController = VideoPlayerController.network(link);
     _chewieController = new ChewieController(
       videoPlayerController: _videoPlayerController,
       showControls: true,
       autoPlay: false,
       looping: false,
-      aspectRatio: imgurPost.images[0].width / imgurPost.images[0].height,
+      aspectRatio: videoWidth / videoHeight,
     );
 
     return VideoWidget(

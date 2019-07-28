@@ -30,7 +30,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  Future<ImgurResponse> imgurResponse;
+  ImgurResponse imgurResponse;
+  int page = 0;
 
   ScrollController _listviewController;
 
@@ -38,13 +39,11 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
 
-    imgurResponse = getMostPopular();
-
-    getMostPopular().then((data) {
+    getMostPopular(page).then((data) {
+      page++;
       print(data.success);
-      print("success");
       setState(() {
-
+        imgurResponse = data;
       });
     });
 
@@ -52,13 +51,15 @@ class _MyHomePageState extends State<MyHomePage> {
     _listviewController.addListener(() {
       if (_listviewController.position.pixels ==
           _listviewController.position.maxScrollExtent) {
+        print("requesting page $page now");
         _loadMore();
       }
     });
   }
 
   void _incrementCounter() {
-    setState(() {});
+    _listviewController.animateTo(_listviewController.position.maxScrollExtent,
+        duration: Duration(milliseconds: 1000), curve: Curves.easeInOut);
   }
 
   @override
@@ -74,26 +75,13 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Container(
-        child: FutureBuilder<ImgurResponse>(
-          future: imgurResponse,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              print("Data recieved");
-              return ListView.builder(
-                controller: _listviewController,
-                itemBuilder: (BuildContext context, int index) {
-                  return ImgurItemWidget(
-                    UniqueKey(),
-                    snapshot.data.data[index],
-                  );
-                },
-              );
-            } else if (snapshot.hasError) {
-              print("API Error!");
-            }
-
-            return Center(
-              child: CircularProgressIndicator(),
+        child: ListView.builder(
+          controller: _listviewController,
+          itemCount: isNull(imgurResponse) ? 0 : imgurResponse.data.length,
+          itemBuilder: (BuildContext context, int index) {
+            return ImgurItemWidget(
+              UniqueKey(),
+              imgurResponse.data[index],
             );
           },
         ),
@@ -106,12 +94,12 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _loadMore() async {
-    ImgurResponse response = await getMostPopular(1);
-
-    setState(() {
-      print('loading more,...');
-      //if we're at the end of the list, add more items
+  void _loadMore() {
+    getMostPopular(page).then((data) {
+      page++;
+      setState(() {
+        imgurResponse.data.addAll(data.data);
+      });
     });
   }
 }
