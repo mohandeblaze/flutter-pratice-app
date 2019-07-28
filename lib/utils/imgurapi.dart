@@ -1,10 +1,8 @@
 import 'dart:convert' as convert;
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/material.dart' as material;
+
 import 'package:http/http.dart' as http;
+import 'package:pratice_app/models/ImageDetails.dart';
 import 'package:pratice_app/models/ImgurResponse.dart';
-import 'package:transparent_image/transparent_image.dart';
 
 const String base = "https://api.imgur.com/3";
 
@@ -31,60 +29,9 @@ bool isVideo(String postType) {
   return postType.contains("mp4") || postType.contains("video");
 }
 
-double convertUnits(double value, BuildContext context) {
-  return value / MediaQuery.of(context).devicePixelRatio;
-}
-
-Widget getPostCard(ImgurPost imgurPost, BuildContext context) {
-  ImageDetails imageDetails = getImageDetails(imgurPost);
-  var url = imageDetails.imageURL;
-  return Card(
-    margin: EdgeInsets.all(8.0),
-    child: Column(
-      children: <Widget>[
-        Container(
-          padding: EdgeInsets.all(4.0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              imageDetails.description,
-              style: new TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-        Container(
-          height: convertUnits(imageDetails.height, context),
-          padding: EdgeInsets.all(4.0),
-          child: CachedNetworkImage(
-            imageUrl: url,
-            placeholder: (context, url) =>
-                material.Image.memory(kTransparentImage),
-          ),
-        ),
-        Container(
-          padding: EdgeInsets.all(4.0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              url,
-              style: new TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Future<ImgurResponse> getMostPopular() async {
+Future<ImgurResponse> getMostPopular([int page = 0]) async {
   try {
-    var url = "$base/gallery/hot/viral";
+    var url = "$base/gallery/hot/viral/$page";
     print(url);
     // Await the http get response, then decode the json-formatted responce.
     var response = await http
@@ -115,15 +62,6 @@ ImageDetails getImageDetails(ImgurPost imgurPost) {
         url, image.height.toDouble(), image.width.toDouble(), imgurPost.title);
   } else {
     return ImageDetails(
-        "http://via.placeholder.com/350x150", 150.0, 150.0, imgurPost.title);
+        "http://via.placeholder.com/350x150", 150.0, 350.0, imgurPost.title);
   }
-}
-
-class ImageDetails {
-  String imageURL;
-  double height;
-  double width;
-  String description;
-
-  ImageDetails(this.imageURL, this.height, this.width, this.description);
 }

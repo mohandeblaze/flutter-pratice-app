@@ -20,6 +20,7 @@ dependencies:
   http: ^0.12.0+2
   cached_network_image: ^1.1.1
   transparent_image: ^0.1.0
+  chewie: ^0.9.7
 
   flutter:
     sdk: flutter
